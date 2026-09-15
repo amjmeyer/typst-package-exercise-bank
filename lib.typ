@@ -157,6 +157,15 @@
   "number-prefix": none,         // none, or "heading" to prefix exercise numbers with the
                                  // current level-1 heading number (e.g. "3.5")
   "number-separator": ".",       // Separator between chapter prefix and exercise number
+  "number-prefix-depth": 1,      // With number-prefix "heading": how many heading levels
+                                 // make up the prefix (2 = "3.2" for section 2 of chapter 3)
+  // Exercise titles
+  "title-separator": [ -- ],     // Between "Exercise 1" and the title
+  "title-format": auto,          // auto, or function (title) => content
+  "title-in-solutions": false,   // Repeat the title on solution/correction boxes
+  // Header spacing (full-width styles and badge-position "above"; auto = style default)
+  "header-rule-gap": auto,       // underline style: space between the label and the rule
+  "header-body-gap": auto,       // Space between the header (label/rule) and the statement
   // Display options
   "show-metadata": false,
   "show-id": false,              // Show exercise UID below the badge
@@ -307,6 +316,14 @@
   counter-reset: none,
   number-prefix: auto,     // auto = keep current; none, or "heading" for chapter-prefixed numbers
   number-separator: none,  // Separator between chapter prefix and number (default ".")
+  number-prefix-depth: none, // Heading levels in a "heading" prefix (default 1)
+  // Exercise titles
+  title-separator: auto,   // Between "Exercise 1" and the title (auto = keep current)
+  title-format: none,      // auto or function (title) => content
+  title-in-solutions: none, // Repeat the title on solution/correction boxes
+  // Header spacing
+  header-rule-gap: none,   // underline style: label -> rule (auto = style default)
+  header-body-gap: none,   // header -> statement (auto = style default)
   // Display options
   show-metadata: none,
   show-id: none,
@@ -387,6 +404,12 @@
     if counter-reset != none { new.counter-reset = counter-reset }
     if number-prefix != auto { new.number-prefix = number-prefix }
     if number-separator != none { new.number-separator = number-separator }
+    if number-prefix-depth != none { new.number-prefix-depth = number-prefix-depth }
+    if title-separator != auto { new.title-separator = title-separator }
+    if title-format != none { new.title-format = title-format }
+    if title-in-solutions != none { new.title-in-solutions = title-in-solutions }
+    if header-rule-gap != none { new.header-rule-gap = header-rule-gap }
+    if header-body-gap != none { new.header-body-gap = header-body-gap }
     if show-metadata != none { new.show-metadata = show-metadata }
     if show-id != none { new.show-id = show-id }
     if show-competencies != none { new.show-competencies = show-competencies }
@@ -444,6 +467,11 @@
     if qr-position != none { new.qr-position = qr-position }
     new
   })
+  // A literal prefix starts a new series ("Série 3" -> 3.1, 3.2, ...): the
+  // numbering restarts with it
+  if type(number-prefix) in (int, content) or (type(number-prefix) == str and number-prefix not in ("heading", "chapter", "section")) {
+    exo-counter.update(0)
+  }
 }
 
 // =============================================================================
@@ -569,20 +597,62 @@
 // Number Formatting
 // =============================================================================
 
+// beautitled interop, without importing it: its state and counters are looked
+// up by name. With `enable-parts`, `=` is a part and `==` a chapter.
+// Must be called inside context.
+#let _beautitled-parts() = {
+  // A state's initial value is the one given where it is read, and
+  // beautitled's update closures then run on it: it must be a dictionary they
+  // can assign keys into (they only ever assign, never read)
+  let c = state("beautitled-config", (enable-parts: false)).get()
+  type(c) == dictionary and c.at("enable-parts", default: false) == true
+}
+
+// (chapter, section) numbers: beautitled's own counters once it has numbered a
+// chapter (they stay right with parts enabled, where counter(heading) starts
+// with the part), counter(heading) otherwise. Must be called inside context.
+#let _chapter-section() = {
+  let chap = counter("beautitled-chapter").get().first()
+  if chap > 0 {
+    (chap, counter("beautitled-section").get().first())
+  } else {
+    let h = counter(heading).get()
+    (h.at(0, default: 0), h.at(1, default: 0))
+  }
+}
+
 // Displayed exercise number, optionally prefixed by a chapter number.
-// number-prefix may be "heading" (current level-1 heading number), a counter
-// (e.g. beautitled's chapter-counter, which bypasses counter(heading)), or a
-// function () => value evaluated in context. Must be called inside context.
+// number-prefix may be "heading" (current heading number, number-prefix-depth
+// levels deep), a counter (e.g. beautitled's chapter-counter, which bypasses
+// counter(heading)), a function () => value evaluated in context, or a literal
+// value (int, string or content: a series number such as 3).
+// Must be called inside context.
 #let format-exo-number(cfg, num) = {
   let prefix = cfg.at("number-prefix", default: none)
   if prefix == none { return [#num] }
-  let chap = if prefix == "heading" {
-    counter(heading).get().first()
+  let chap = if prefix == "chapter" {
+    _chapter-section().first()
+  } else if prefix == "section" {
+    // "chapter.section"; before the first section of a chapter, the chapter alone
+    let (c, s) = _chapter-section()
+    if s == 0 { c } else if c == 0 { s } else { str(c) + "." + str(s) }
+  } else if prefix == "heading" {
+    let depth = cfg.at("number-prefix-depth", default: 1)
+    let levels = counter(heading).get()
+    if depth <= 1 {
+      levels.first()
+    } else {
+      // Pad missing levels with 0 so "3.0.5" never silently becomes "3.5"
+      let parts = range(depth).map(i => levels.at(i, default: 0))
+      if parts.all(p => p == 0) { 0 } else { parts.map(str).join(".") }
+    }
   } else if type(prefix) == function {
     prefix()
-  } else {
-    // Assume a counter (custom heading packages often keep their own)
+  } else if type(prefix) == counter {
+    // Custom heading packages often keep their own
     prefix.get().first()
+  } else {
+    prefix
   }
   let show-prefix = if chap == none { false } else if type(chap) == int { chap > 0 } else { true }
   if show-prefix {
@@ -936,49 +1006,86 @@
   }
 }
 
+// Header line followed by the body at an exact distance (header-body-gap):
+// both sit in blocks of their own so the paragraph spacing does not add up
+// with the requested gap
+#let _header-then-body(header, body, gap) = {
+  block(spacing: 0pt, width: 100%, header)
+  block(above: gap, below: 0pt, width: 100%, breakable: true, body)
+}
+
 // Style: border-accent - Left vertical bar with inline header
-#let style-border-accent(label, number, body, font-size, color, is-solution) = {
+#let style-border-accent(label, number, body, font-size, color, is-solution, gaps: (:)) = {
   let bar-color = color
+  let header = text(weight: "bold", size: font-size, fill: bar-color)[#label~#number]
+  let body-gap = gaps.at("body", default: auto)
   block(
     stroke: (left: 3pt + bar-color),
     inset: (left: 12pt, y: 8pt),
     width: 100%,
   )[
-    #text(weight: "bold", size: font-size, fill: bar-color)[#label~#number]
-    #v(0.3em)
-    #body
+    #if body-gap == auto [
+      #header
+      #v(0.3em)
+      #body
+    ] else {
+      _header-then-body(header, body, body-gap)
+    }
   ]
 }
 
 // Style: underline - Bold header with underline
-#let style-underline(label, number, body, font-size, color, is-solution) = {
+#let style-underline(label, number, body, font-size, color, is-solution, gaps: (:)) = {
   let line-color = color
-  block(width: 100%)[
-    #text(weight: "bold", size: font-size + 1pt, fill: line-color)[#label~#number]
-    #v(-0.3em)
-    #line(length: 100%, stroke: 0.8pt + line-color)
-    #v(0.5em)
-    #body
-  ]
+  let rule-gap = gaps.at("rule", default: auto)
+  let body-gap = gaps.at("body", default: auto)
+  let header = text(weight: "bold", size: font-size + 1pt, fill: line-color)[#label~#number]
+  let rule = line(length: 100%, stroke: 0.8pt + line-color)
+  if rule-gap == auto and body-gap == auto {
+    block(width: 100%)[
+      #header
+      #v(-0.3em)
+      #rule
+      #v(0.5em)
+      #body
+    ]
+  } else {
+    // Explicit gaps: every piece in its own block, spaced exactly. An auto gap
+    // keeps (approximately) the style's default distance
+    let rule-gap = if rule-gap == auto { 0.9em } else { rule-gap }
+    let body-gap = if body-gap == auto { 1.7em } else { body-gap }
+    block(width: 100%, {
+      block(spacing: 0pt, width: 100%, header)
+      block(above: rule-gap, below: 0pt, width: 100%, rule)
+      block(above: body-gap, below: 0pt, width: 100%, breakable: true, body)
+    })
+  }
 }
 
 // Style: rounded-box - Clean rounded border around entire exercise
-#let style-rounded-box(label, number, body, font-size, color, is-solution) = {
+#let style-rounded-box(label, number, body, font-size, color, is-solution, gaps: (:)) = {
   let border-color = color
+  let header = text(weight: "bold", size: font-size, fill: border-color)[#label~#number]
+  let body-gap = gaps.at("body", default: auto)
   block(
     width: 100%,
     stroke: 1.2pt + border-color,
     radius: 10pt,
     inset: 12pt,
   )[
-    #text(weight: "bold", size: font-size, fill: border-color)[#label~#number]
-    #v(2pt)
-    #body
+    #if body-gap == auto [
+      #header
+      #v(2pt)
+      #body
+    ] else {
+      _header-then-body(header, body, body-gap)
+    }
   ]
 }
 
 // Style: header-card - Rounded box with colored header strip
-#let style-header-card(label, number, body, font-size, color, is-solution) = {
+#let style-header-card(label, number, body, font-size, color, is-solution, gaps: (:)) = {
+  let body-gap = gaps.at("body", default: auto)
   let header-color = color
   block(
     width: 100%,
@@ -995,7 +1102,7 @@
     ]
     #block(
       width: 100%,
-      inset: (x: 12pt, top: 8pt, bottom: 12pt),
+      inset: (x: 12pt, top: if body-gap == auto { 8pt } else { body-gap }, bottom: 12pt),
       above: 0pt,
     )[#body]
   ]
@@ -1153,6 +1260,7 @@
   margin-label-gutter: 0.55cm,
   margin-fold-below: auto,
   margin-fold: none,
+  gaps: (:),  // (rule: header-rule-gap, body: header-body-gap)
 ) = {
   if style == "margin" {
     style-margin(
@@ -1164,15 +1272,15 @@
       fold: margin-fold,
     )
   } else if qr != none {
-    get-fullwidth-style(style, label, number, qr-wrap-body(qr, body), font-size, color, is-solution)
+    get-fullwidth-style(style, label, number, qr-wrap-body(qr, body), font-size, color, is-solution, gaps: gaps)
   } else if style == "border-accent" {
-    style-border-accent(label, number, body, font-size, color, is-solution)
+    style-border-accent(label, number, body, font-size, color, is-solution, gaps: gaps)
   } else if style == "underline" {
-    style-underline(label, number, body, font-size, color, is-solution)
+    style-underline(label, number, body, font-size, color, is-solution, gaps: gaps)
   } else if style == "rounded-box" {
-    style-rounded-box(label, number, body, font-size, color, is-solution)
+    style-rounded-box(label, number, body, font-size, color, is-solution, gaps: gaps)
   } else if style == "header-card" {
-    style-header-card(label, number, body, font-size, color, is-solution)
+    style-header-card(label, number, body, font-size, color, is-solution, gaps: gaps)
   } else {
     // Fallback - should not happen
     body
@@ -1265,8 +1373,21 @@
                            // than set through exo-setup so that a caller which already read
                            // the config — the deferred correction section — does not write
                            // back into it, which would close a cycle in the introspection graph
+  title: none,             // Optional exercise title ("Exercise 1 – Pythagorean theorem")
 ) = context {
   let cfg = exo-config.get()
+
+  // Title: inline in the header of the full-width styles (after
+  // title-separator, in the header's own weight), or as a bold line next to
+  // the badge for the badge styles
+  let title-fmt = cfg.at("title-format", default: auto)
+  let title-inline = if title != none {
+    if title-fmt == auto { title } else { title-fmt(title) }
+  }
+  let title-strong = if title != none {
+    if title-fmt == auto { strong(title) } else { title-fmt(title) }
+  }
+  let header-body-gap = cfg.at("header-body-gap", default: auto)
 
   // Determine the color based on box type
   let actual-color = if box-type == "solution" {
@@ -1365,6 +1486,19 @@
         full-body
       }
     }
+    // Title: the side label of "margin" is too narrow for it, so it opens the
+    // statement there; the other styles carry it in their header line
+    let number = number
+    if title != none {
+      if cfg.badge-style == "margin" and not is-solution {
+        full-body = {
+          block(spacing: 0pt, below: 0.6em, title-strong)
+          full-body
+        }
+      } else {
+        number = [#number#cfg.at("title-separator", default: [ -- ])#title-inline]
+      }
+    }
 
     block(
       above: space-above,
@@ -1387,6 +1521,7 @@
         // badge-position "above" is a document-wide statement that the badge
         // must not cost column width: the side label folds with it
         margin-fold: if badge-pos == "above" { true } else { none },
+        gaps: (rule: cfg.at("header-rule-gap", default: auto), body: header-body-gap),
       )
     ]
   } else {
@@ -1425,6 +1560,7 @@
         set text(hyphenate: false)
         box[#badge-with-points]
         if badge-sub != none { h(4pt); badge-sub }
+        if title != none { h(6pt); title-strong }
         if show-id and exercise-id != none { id-block }
       }
       // The QR keeps its own line under the header unless it was asked to be
@@ -1455,7 +1591,7 @@
         })
         #if qr-block != none { sticky-block(above: 4pt, qr-block) }
         #if margin-content != none { sticky-block(above: 4pt, margin-content) }
-        #block(above: 4pt, width: 100%, breakable: true)[
+        #block(above: if header-body-gap == auto { 4pt } else { header-body-gap }, width: 100%, breakable: true)[
           #stacked-body
           #if show-competencies and competencies.len() > 0 { comp-block }
         ]
@@ -1536,6 +1672,9 @@
         )[
           #set par(first-line-indent: 0cm)
           #v(3pt)  // Align with badge text
+          #if title != none {
+            block(spacing: 0pt, below: if header-body-gap == auto { 0.6em } else { header-body-gap }, title-strong)
+          }
           #content-body
           #if show-competencies and competencies.len() > 0 { comp-block }
         ],
@@ -1544,7 +1683,7 @@
   }
 }
 
-#let exo-solution-box(number: 1, body, exercise-id: none, show-id: false, qr: none, label-marker: none, badge-position: auto) = context {
+#let exo-solution-box(number: 1, body, exercise-id: none, show-id: false, qr: none, label-marker: none, badge-position: auto, title: none) = context {
   let cfg = exo-config.get()
   exo-box(
     label: cfg.solution-label,
@@ -1556,10 +1695,11 @@
     qr: qr,
     label-marker: label-marker,
     badge-position: badge-position,
+    title: if cfg.at("title-in-solutions", default: false) { title },
   )
 }
 
-#let exo-correction-box(number: 1, body, exercise-id: none, show-id: false, qr: none, label-marker: none, badge-position: auto) = context {
+#let exo-correction-box(number: 1, body, exercise-id: none, show-id: false, qr: none, label-marker: none, badge-position: auto, title: none) = context {
   let cfg = exo-config.get()
   exo-box(
     label: cfg.correction-label,
@@ -1571,6 +1711,7 @@
     qr: qr,
     label-marker: label-marker,
     badge-position: badge-position,
+    title: if cfg.at("title-in-solutions", default: false) { title },
   )
 }
 
@@ -1707,7 +1848,7 @@
 // - link-base: when set (and link-solutions is on), the first item receives
 //   the "exb-corr-<base>" link target and every item gets a back-link icon
 //   to the exercise
-#let show-content-items(items, number, exercise-id, cfg, loc: none, link-base: none) = {
+#let show-content-items(items, number, exercise-id, cfg, loc: none, link-base: none, title: none) = {
   let first = true
   for item in items {
     let body = item.content
@@ -1733,6 +1874,7 @@
           show-id: cfg.show-id,
           qr: item.at("qr", default: none),
           label-marker: marker,
+          title: title,
         )
       }
     } else {
@@ -1743,6 +1885,7 @@
         show-id: cfg.show-id,
         qr: item.at("qr", default: none),
         label-marker: marker,
+        title: title,
       )
     }
   }
@@ -1879,7 +2022,7 @@
 // Place solution/correction items per type: immediately after the exercise,
 // after a pagebreak, or deferred to the pending queue (end-section /
 // end-chapter, printed by exo-print-solutions)
-#let place-content-items(items, number, exercise-id, cfg, link-base: none) = {
+#let place-content-items(items, number, exercise-id, cfg, link-base: none, title: none) = {
   let after-items = ()
   let pagebreak-items = ()
   let deferred = ()
@@ -1893,11 +2036,11 @@
       after-items.push(item)
     }
   }
-  show-content-items(after-items, number, exercise-id, cfg, loc: "after")
+  show-content-items(after-items, number, exercise-id, cfg, loc: "after", title: title)
   let label-attached = false
   if pagebreak-items.len() > 0 {
     pagebreak(weak: true)
-    show-content-items(pagebreak-items, number, exercise-id, cfg, link-base: link-base)
+    show-content-items(pagebreak-items, number, exercise-id, cfg, link-base: link-base, title: title)
     label-attached = true
   }
   for (i, d) in deferred.enumerate() {
@@ -1914,6 +2057,7 @@
         loc: d.loc,
         link-base: link-base,
         attach-label: attach,
+        title: title,
       ))
       pending
     })
@@ -1924,11 +2068,37 @@
 // Main Exercise Function
 // =============================================================================
 
+// Worked example (exo(worked: true)): the solution/correction to show. The
+// usual corr-display choice first; when it yields nothing (e.g. only a
+// correction while corr-display is "solution"), whatever the exercise has.
+#let _worked-items(items, solution, correction, cfg, qr-sol: none, qr-corr: none) = {
+  if items.len() > 0 { return items }
+  if correction != none {
+    ((type: "correction", content: correction, qr: qr-corr),)
+  } else if solution != none {
+    ((type: "solution", content: solution, qr: qr-sol),)
+  } else {
+    ()
+  }
+}
+
+// Configuration seen by a worked example: every item is placed "after"
+#let _worked-cfg(cfg) = {
+  let cfg = cfg
+  cfg.corrLoc = "after"
+  cfg.sol-loc = "after"
+  cfg
+}
+
 #let exo(
   exercise: none,
   solution: none,
   correction: none,
   id: auto,
+  title: none,           // Optional title shown after "Exercise 1"
+  worked: false,         // Worked example: always show the solution/correction
+                         // right after the statement (even with display: "ex"
+                         // or a deferred corr-loc)
   margin-content: none,  // Optional content below the badge (e.g., QR code, remarks)
   qr: none,              // QR code: URL string or content, placed per badge style
   qr-sol: none,          // QR code shown on the solution box
@@ -2000,6 +2170,8 @@
     qr-corr: qr-corr,
     solInCorr: sol-in-corr,
     showCorr: show-corr,
+    title: title,
+    worked: worked,
   )
 
   // Register exercise
@@ -2012,7 +2184,8 @@
   if cfg.display == "sol" {
     // Only show solution/correction
     let items-to-show = determine-content-to-show(solution, correction, cfg, exercise-flags, qr-sol: qr-sol, qr-corr: qr-corr)
-    show-content-items(items-to-show, disp-num, exercise-id, cfg)
+    if worked { items-to-show = _worked-items(items-to-show, solution, correction, cfg, qr-sol: qr-sol, qr-corr: qr-corr) }
+    show-content-items(items-to-show, disp-num, exercise-id, cfg, title: title)
   } else if cfg.display == "ex" {
     // Only show exercise
     exo-box(
@@ -2026,10 +2199,23 @@
       margin-content: margin-content,
       qr: qr,
       badge-color: ex-badge-color,
+      title: title,
     )
+    // Worked example: its solution shows even in the exercises-only version
+    if worked {
+      let items = determine-content-to-show(solution, correction, cfg, exercise-flags, qr-sol: qr-sol, qr-corr: qr-corr)
+      show-content-items(
+        _worked-items(items, solution, correction, cfg, qr-sol: qr-sol, qr-corr: qr-corr),
+        disp-num, exercise-id, cfg, loc: "after", title: title,
+      )
+    }
   } else {
     // "both" mode - show exercise and solution/correction
     let items-to-show = determine-content-to-show(solution, correction, cfg, exercise-flags, qr-sol: qr-sol, qr-corr: qr-corr)
+    // A worked example keeps its solution right under the statement, whatever
+    // corr-loc says (nothing deferred, so no link either)
+    let cfg = if worked { _worked-cfg(cfg) } else { cfg }
+    if worked { items-to-show = _worked-items(items-to-show, solution, correction, cfg, qr-sol: qr-sol, qr-corr: qr-corr) }
 
     // Exercise <-> correction links: only when something is actually deferred
     let link-base = none
@@ -2068,10 +2254,11 @@
       qr: qr,
       badge-color: ex-badge-color,
       header-right: header-right,
+      title: title,
     )
 
     // Handle solution/correction display (per-type location)
-    place-content-items(items-to-show, disp-num, exercise-id, cfg, link-base: link-base)
+    place-content-items(items-to-show, disp-num, exercise-id, cfg, link-base: link-base, title: title)
   }
   }  // close context
 }  // close function
@@ -2430,6 +2617,7 @@
           qr: item-qr,
           label-marker: marker,
           badge-position: corr-pos,
+          title: item.at("title", default: none),
         ))
       } else {
         boxes.push(exo-correction-box(
@@ -2440,6 +2628,7 @@
           qr: item-qr,
           label-marker: marker,
           badge-position: corr-pos,
+          title: item.at("title", default: none),
         ))
       }
     }
@@ -2470,35 +2659,68 @@
   exo-print-solutions(loc: "end-chapter")
 }
 
-// Wrap the whole document to automate end-chapter corrections: the pending
-// items are printed before each new level-1 heading and at the end of the
-// document, and the exercise counter resets at each chapter (per the
-// counter-reset setting).
+// Role of a heading of the given level: "chapter", "section" or none.
+// A chapter is level 1, a section level 2 — one level deeper each when
+// beautitled has parts enabled (a part counts as a chapter boundary).
+// Must be called inside context.
+#let _heading-role(level) = {
+  let chapter-level = if _beautitled-parts() { 2 } else { 1 }
+  if level <= chapter-level { "chapter" } else if level == chapter-level + 1 { "section" }
+}
+
+// Wrap the whole document to automate end-of-chapter and end-of-section
+// corrections and numbering:
+// - before each chapter heading (and at the end of the document) the pending
+//   end-section and end-chapter items are printed; after it the exercise
+//   counter resets per the counter-reset setting
+// - before each section heading the pending end-section items are printed;
+//   with `sections` on, the counter also resets after it (counter-reset
+//   "section")
+//
+// sections: auto = on when number-prefix is "section"; true / false to force.
+// The levels follow beautitled's `enable-parts` automatically.
 //
 //   #show: exo-auto-chapter
-#let exo-auto-chapter(body) = context {
+#let exo-auto-chapter(body, sections: auto) = context {
   // Corrections printed inside the heading show rule would inherit the
   // heading text style (bold, large); capture the base style here to reset it
   let base-size = text.size
   let base-weight = text.weight
-  show heading.where(level: 1): it => {
+  show heading: it => {
     // Headings emitted internally by heading-styling packages (e.g.
     // beautitled's hidden outline headings, labelled <_btl-internal>) must
     // not trigger a chapter boundary: they can sit inside place(hide(..)),
     // where the corrections would print invisibly yet be cleared from the
     // pending queue
     if it.at("label", default: none) == label("_btl-internal") {
-      it
-    } else {
-      {
+      return it
+    }
+    let level = it.level
+    // The role is resolved at the heading itself, so exo-setup and
+    // beautitled-setup calls placed after the show rule are taken into account
+    context {
+      let role = _heading-role(level)
+      if role != none {
         set text(size: base-size, weight: base-weight)
-        exo-chapter-end()
+        exo-print-solutions(loc: "end-section")
+        if role == "chapter" { exo-chapter-end() }
       }
-      it
-      exo-chapter-start()
+    }
+    it
+    context {
+      let role = _heading-role(level)
+      if role == "chapter" {
+        exo-chapter-start()
+      } else if role == "section" {
+        let on = if sections == auto {
+          exo-config.get().at("number-prefix", default: none) == "section"
+        } else { sections }
+        if on { exo-section-start() }
+      }
     }
   }
   body
+  exo-print-solutions(loc: "end-section")
   exo-chapter-end()
 }
 
@@ -2553,11 +2775,13 @@
           badge-sub: get-difficulty-badge-sub(cfg, meta),
           qr: exercise.at("qr", default: none),
           badge-color: get-exercise-badge-color(cfg, meta),
+          title: exercise.at("title", default: none),
         )
       }
 
       // Handle solution/correction display
-      if show-solutions and cfg.display != "ex" {
+      let worked = exercise.at("worked", default: false)
+      if (show-solutions and cfg.display != "ex") or worked {
         let sol = exercise.at("solution", default: none)
         let corr = exercise.at("correction", default: none)
         let items-to-show = determine-content-to-show(
@@ -2565,7 +2789,13 @@
           qr-sol: exercise.at("qr-sol", default: none),
           qr-corr: exercise.at("qr-corr", default: none),
         )
-        show-content-items(items-to-show, exercise.number, exercise.id, cfg)
+        if worked {
+          items-to-show = _worked-items(items-to-show, sol, corr, cfg,
+            qr-sol: exercise.at("qr-sol", default: none),
+            qr-corr: exercise.at("qr-corr", default: none))
+        }
+        show-content-items(items-to-show, exercise.number, exercise.id, cfg,
+          title: exercise.at("title", default: none))
       }
     }
   }
@@ -2581,6 +2811,8 @@
   solution: none,
   correction: none,
   id: auto,
+  title: none,       // Optional title shown after "Exercise 1"
+  worked: false,     // Worked example: always show the solution after the statement
   competencies: (),  // List of competency tags
   points: none,      // Points for exam mode
   qr: none,          // QR code: URL string or content, placed per badge style
@@ -2640,6 +2872,8 @@
       qr-corr: qr-corr,
       solInCorr: sol-in-corr,
       showCorr: show-corr,
+      title: title,
+      worked: worked,
     )
 
     // Register exercise without displaying
@@ -2743,6 +2977,7 @@
           badge-sub: get-difficulty-badge-sub(display-cfg, display-metadata),
           qr: ex-qr,
           badge-color: ex-badge-color,
+          title: found.at("title", default: none),
         )
 
         // Show solution if configured
@@ -2756,7 +2991,12 @@
         // EXERCISE MODE: Use default exo-box format (no points)
         // Determine what content to show
         let items-to-show = determine-content-to-show(sol, corr, cfg, exercise-flags, qr-sol: ex-qr-sol, qr-corr: ex-qr-corr)
-        let show-items = items-to-show.len() > 0 and (cfg.display == "sol" or (cfg.display == "both" and do-show-solution))
+        // Worked example: solution always shown, right after the statement
+        let worked = found.at("worked", default: false)
+        let cfg = if worked { _worked-cfg(cfg) } else { cfg }
+        if worked { items-to-show = _worked-items(items-to-show, sol, corr, cfg, qr-sol: ex-qr-sol, qr-corr: ex-qr-corr) }
+        let show-items = items-to-show.len() > 0 and (cfg.display == "sol" or (cfg.display == "both" and do-show-solution) or worked)
+        let ex-title = found.at("title", default: none)
 
         // Exercise <-> correction links: only when something is actually deferred
         let link-base = none
@@ -2798,15 +3038,16 @@
             qr: ex-qr,
             badge-color: ex-badge-color,
             header-right: header-right,
+            title: ex-title,
           )
         }
 
         // Handle solution/correction display (per-type location)
         if show-items {
           if cfg.display == "sol" {
-            show-content-items(items-to-show, disp-num, found.id, cfg)
+            show-content-items(items-to-show, disp-num, found.id, cfg, title: ex-title)
           } else {
-            place-content-items(items-to-show, disp-num, found.id, cfg, link-base: link-base)
+            place-content-items(items-to-show, disp-num, found.id, cfg, link-base: link-base, title: ex-title)
           }
         }
       }
@@ -2984,6 +3225,7 @@
         badge-sub: get-difficulty-badge-sub(cfg, exercise.metadata),
         qr: ex-qr,
         badge-color: ex-badge-color,
+        title: exercise.at("title", default: none),
       )
 
       // Show solution if configured
@@ -3001,7 +3243,16 @@
         qr-sol: exercise.at("qr-sol", default: none),
         qr-corr: exercise.at("qr-corr", default: none),
       )
-      let show-items = items-to-show.len() > 0 and (cfg.display == "sol" or do-show-solutions)
+      // Worked example: solution always shown, right after the statement
+      let worked = exercise.at("worked", default: false)
+      let cfg = if worked { _worked-cfg(cfg) } else { cfg }
+      if worked {
+        items-to-show = _worked-items(items-to-show, sol, corr, cfg,
+          qr-sol: exercise.at("qr-sol", default: none),
+          qr-corr: exercise.at("qr-corr", default: none))
+      }
+      let show-items = items-to-show.len() > 0 and (cfg.display == "sol" or do-show-solutions or worked)
+      let ex-title = exercise.at("title", default: none)
 
       // Exercise <-> correction links: only when something is actually deferred.
       // Label base combines the call base and the loop index for uniqueness.
@@ -3043,15 +3294,16 @@
           qr: ex-qr,
           badge-color: ex-badge-color,
           header-right: header-right,
+          title: ex-title,
         )
       }
 
       // Handle solution/correction display (per-type location)
       if show-items {
         if cfg.display == "sol" {
-          show-content-items(items-to-show, disp-num, exercise.id, cfg)
+          show-content-items(items-to-show, disp-num, exercise.id, cfg, title: ex-title)
         } else {
-          place-content-items(items-to-show, disp-num, exercise.id, cfg, link-base: link-base)
+          place-content-items(items-to-show, disp-num, exercise.id, cfg, link-base: link-base, title: ex-title)
         }
       }
     }

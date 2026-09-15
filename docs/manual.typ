@@ -1,4 +1,4 @@
-#import "@preview/exercise-bank:0.6.4": *
+#import "@preview/exercise-bank:0.6.5": *
 
 // =============================================================================
 // DOCUMENT SETUP
@@ -95,7 +95,7 @@
   #v(1cm)
   #text(size: 11pt)[
     A comprehensive solution for creating, organizing, and filtering exercises\
-    Version 0.6.4\
+    Version 0.6.5\
     Nathan Scheinmann
   ]
 ]
@@ -139,7 +139,7 @@
 Import the package in your Typst document:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 ```
 
 == Quick Start
@@ -219,6 +219,33 @@ Exercises are automatically numbered:
 // =============================================================================
 // DISPLAY CONTROL
 // =============================================================================
+
+= Titles and Worked Examples
+
+== Exercise Titles
+
+```typst
+#exo(
+  title: [Calculer une longueur avec le théorème de Pythagore],
+  exercise: [...],
+)
+```
+
+The full-width styles carry the title in their header line, after `title-separator` (default an en dash): "Exercice 1 – Calculer une longueur…". The badge styles show it in bold next to the badge; `margin` opens the statement with it. `title-format: t => ..` restyles it and `title-in-solutions: true` repeats it on the solution and correction boxes.
+
+== Worked Examples
+
+`worked: true` shows the solution (or correction) right under the statement whatever the document-wide settings: also with `display: "ex"`, with a deferred `corr-loc`, and with `corr-display: "solution"` when the exercise only has a correction.
+
+```typst
+#exo-setup(display: "ex")
+#exo(
+  title: [Worked example],
+  worked: true,
+  exercise: [Simplify $e^3 times e^4$.],
+  solution: [$e^7$],
+)
+```
 
 = Display Control
 
@@ -1081,6 +1108,26 @@ Customize with `link-icon` / `backlink-icon` (icons) or `page-ref-color` / `page
 #show: exo-auto-chapter
 ```
 
+For chapter or section numbering, use `number-prefix: "chapter"` ("3.5") or `"section"` ("3.2.5") with `exo-auto-chapter`. It restarts the numbering at each chapter, and at each section for `"section"` (or with `exo-auto-chapter.with(sections: true)`). It also prints the pending `"end-section"` corrections before every chapter and section heading:
+
+```typst
+#show: exo-auto-chapter
+#exo-setup(number-prefix: "section", corr-loc: "end-section")
+= Equations
+== Linear      // 1.1.1, 1.1.2 -- solutions printed before the next section
+```
+
+With beautitled, both keywords read its own chapter and section counters, and `exo-auto-chapter` follows `enable-parts` (`==` chapter, `===` section): no extra configuration.
+
+`number-prefix-depth: 2` builds a `"heading"` prefix from two levels of `counter(heading)` ("3.2.5").
+
+A literal value (int, string or content) sets a series number, and restarts the numbering:
+
+```typst
+#exo-setup(number-prefix: 3)   // Série 3: 3.1, 3.2, ...
+#exo-setup(number-prefix: 4)   // 4.1, 4.2, ...
+```
+
 `number-prefix` also accepts a counter or a function `() => value`, for heading packages that keep their own chapter counter instead of `counter(heading)`. With beautitled 0.3.0+ the native counter is kept in sync, so `number-prefix: "heading"` works directly; for earlier versions (or with `enable-parts`, where the first heading level is the part) use beautitled's exported counter:
 
 ```typst
@@ -1265,6 +1312,12 @@ For full control, pass a function `(label, number, font-size, color, is-solution
   ]
 )
 
+The space between the label, its rule and the statement is set with `header-rule-gap` and `header-body-gap` (`auto` = the default above). `header-body-gap` also applies to the other full-width styles and to `badge-position: "above"`:
+
+```typst
+#exo-setup(badge-style: "underline", header-rule-gap: 0.25em, header-body-gap: 0.5em)
+```
+
 == Rounded Box
 
 #example-full(
@@ -1410,7 +1463,7 @@ Exercise sheets often read better on two columns, statements and solutions flowi
 `exo-page-columns` is a show rule: it switches the page to `count` columns, draws an optional vertical rule in the middle of every gutter, and (unless told otherwise) moves the badges above the statements so they cost no column width.
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-page-columns
+#import "@preview/exercise-bank:0.6.5": exo, exo-page-columns
 
 #show: exo-page-columns.with(count: 2, rule: 0.5pt + gray)
 
@@ -1553,6 +1606,8 @@ The badge styles that wrap the whole exercise (`border-accent`, `underline`, `ro
   [`solution`], [content], [none], [Solution content],
   [`correction`], [content], [none], [Correction for teachers],
   [`id`], [string], [auto], [Unique exercise ID],
+  [`title`], [content], [none], [Title shown after "Exercise 1"],
+  [`worked`], [bool], [false], [Worked example: always show the solution right after the statement],
   [`margin-content`], [content], [none], [Content placed below the badge (e.g. remarks)],
   [`qr`], [string/content], [none], [QR code for the exercise box (URL string or content)],
   [`qr-sol`], [string/content], [none], [QR code for the solution box],
@@ -1577,6 +1632,8 @@ Same as `exo`, plus:
   [*Parameter*], [*Type*], [*Default*], [*Description*],
   [`optional`], [bool], [false], [Show the optional marker before the label],
   [`corr-given`], [bool], [false], [Show the correction-given marker (dumbbell icon)],
+  [`title`], [content], [none], [Title shown after "Exercise 1"],
+  [`worked`], [bool], [false], [Worked example: always show the solution after the statement],
   [`competencies`], [array], [()], [Competency tags],
   [`points`], [number], [none], [Points (for exam mode)],
 )
@@ -1617,8 +1674,12 @@ Same as `exo`, plus:
   [`solution-label`], [string], ["Solution"], [Label for solutions],
   [`correction-label`], [string], ["Correction"], [Label for corrections],
   [`counter-reset`], [string], ["section"], ["section", "chapter", "global"],
-  [`number-prefix`], [none/str/counter/function], [none], ["heading" (level-1 heading number), a custom counter, or a function],
+  [`number-prefix`], [none/str/int/content/counter/function], [none], ["chapter" / "section" (beautitled-aware), "heading" (heading number), a literal series number (restarts the numbering), a custom counter, or a function],
+  [`number-prefix-depth`], [int], [1], [Heading levels in a "heading" prefix (2 = "3.2.5")],
   [`number-separator`], [string], ["."], [Separator for chapter-prefixed numbers],
+  [`title-separator`], [content], [`[ -- ]`], [Between "Exercise 1" and the title],
+  [`title-format`], [auto/function], [auto], [Restyle titles: (title) => content],
+  [`title-in-solutions`], [bool], [false], [Repeat the title on solution/correction boxes],
   [`show-id`], [bool], [false], [Show exercise IDs],
   [`show-competencies`], [bool], [false], [Show competency tags],
   [`draft-mode`], [bool], [false], [Show placeholders for empty content],
@@ -1665,6 +1726,8 @@ Same as `exo`, plus:
   [`solution-below`], [length], [0.8em], [Space below solution boxes],
   [`correction-above`], [length], [0.8em], [Space above correction boxes],
   [`correction-below`], [length], [0.8em], [Space below correction boxes],
+  [`header-rule-gap`], [length/auto], [auto], [underline style: space between the label and its rule],
+  [`header-body-gap`], [length/auto], [auto], [Space between the header and the statement (full-width styles, badge-position "above")],
   [`advanced-symbol`], [content/none], [`"*"`], [Symbol before label for advanced exercises],
   [`optional-symbol`], [content/none], [star icon], [Symbol before label for optional exercises],
   [`corr-given-symbol`], [content/none], [dumbbell icon], [Symbol before label when correction is handed out],

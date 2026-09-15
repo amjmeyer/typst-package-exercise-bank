@@ -1,6 +1,6 @@
 # exercise-bank
 
-[![exercise-bank on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.6.4-239dad?labelColor=eee)](https://typst.app/universe/package/exercise-bank)
+[![exercise-bank on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.6.5-239dad?labelColor=eee)](https://typst.app/universe/package/exercise-bank)
 [![Full package manual as PDF](https://img.shields.io/badge/Manual-pdf-333333?labelColor=eee)](https://github.com/nathan-ed/typst-package-exercise-bank/blob/f06e1416ce6752ad049312afbe768f64dd464491/docs/manual.pdf)
 [![Distributed under the MIT license](https://img.shields.io/badge/License-MIT-333333?labelColor=eee)](LICENSE)
 
@@ -26,6 +26,8 @@ Click on an image to see the source code.
 | Linked Corrections | Inline Solutions | Corrections Only |
 | [![Badge placed above the statement instead of in a left margin column](gallery/badge-position.svg)](gallery/badge-position.typ) | [![Exercises and their corrections set on two columns with a vertical rule](gallery/two-columns.svg)](gallery/two-columns.typ) | [![The same badge shape at three sizes](gallery/badge-size.svg)](gallery/badge-size.typ) |
 | Badge Position | Two-Column Layouts | Badge Size |
+| [![Exercise titles and a worked example whose solution stays visible in the student version](gallery/titles-worked.svg)](gallery/titles-worked.typ) | [![Exercises numbered per section with solutions printed before each new section](gallery/section-numbering.svg)](gallery/section-numbering.typ) | |
+| Titles and Worked Examples | Per-Section Numbering | |
 
 ## Features
 
@@ -38,7 +40,10 @@ Click on an image to see the source code.
 - **Difficulty levels** - Encode up to 5 (or more) difficulty levels as badge colors, stars, or symbols
 - **Clickable links** - Jump from an exercise to its deferred correction and back
 - **Split solution/correction placement** - Short solution under the statement (epigraph-style), full correction at the end of the chapter
-- **Chapter-prefixed numbering** - Number exercises as "3.5" using the current heading number
+- **Chapter-prefixed numbering** - Number exercises as "3.5" using the current heading number, "3.2.5" with two heading levels, or a series number of your choice (`number-prefix: 3`)
+- **Exercise titles** - "Exercise 1 – Pythagorean theorem" with `exo(title: ..)`
+- **Worked examples** - `exo(worked: true)` shows its solution right under the statement, even in the student version
+- **Compact headers** - `header-rule-gap` and `header-body-gap` tighten the space between the label, its rule and the statement
 - **Automatic end-of-chapter corrections** - `#show: exo-auto-chapter` prints pending corrections before each new chapter
 - **Teacher corrections** - Add detailed corrections for teachers
 - **Flexible display modes** - Control what to show (exercises, solutions, or both)
@@ -59,7 +64,7 @@ Click on an image to see the source code.
 ## Quick Start
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo
+#import "@preview/exercise-bank:0.6.5": exo
 
 #exo(
   exercise: [
@@ -73,7 +78,7 @@ Click on an image to see the source code.
 ### Simple Exercise
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo
+#import "@preview/exercise-bank:0.6.5": exo
 
 #exo(
   exercise: [
@@ -85,7 +90,7 @@ Click on an image to see the source code.
 ### Exercise with Solution
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo
+#import "@preview/exercise-bank:0.6.5": exo
 
 #exo(
   exercise: [
@@ -100,7 +105,7 @@ Click on an image to see the source code.
 ### Multiple Exercises
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo
+#import "@preview/exercise-bank:0.6.5": exo
 
 #exo(exercise: [Simplify $x^2 + 2x + 1$.])
 #exo(exercise: [Factor $x^2 - 4$.])
@@ -120,7 +125,7 @@ Controls what content is displayed:
 - `"sol"` - Show only solutions/corrections (hide exercises)
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 
 // Student worksheet - exercises only
 #exo-setup(display: "ex")
@@ -141,7 +146,7 @@ Controls whether to show solutions or corrections:
 - `"mixed"` - Default to solution, but show correction for exercises with `show-corr: true`
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 
 // Student version - show solutions
 #exo-setup(corr-display: "solution")
@@ -172,7 +177,7 @@ Controls where solutions/corrections appear:
 **Important:** with `"end-section"` and `"end-chapter"`, the solutions are only *collected* - you decide where they appear by calling `#exo-section-end()` / `#exo-chapter-end()` (or `#exo-print-solutions()`) at that point, or by using `exo-auto-chapter` (see below) to do it automatically.
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup, exo-print-solutions
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup, exo-print-solutions
 
 // Solutions at end of section
 #exo-setup(corr-loc: "end-section")
@@ -189,7 +194,7 @@ Controls where solutions/corrections appear:
 Instead of calling `#exo-chapter-end()` manually, wrap your document with `exo-auto-chapter`: the pending solutions/corrections are printed right before each new level-1 heading and at the end of the document, and the exercise counter resets at each chapter.
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup, exo-auto-chapter
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup, exo-auto-chapter
 
 #exo-setup(corr-loc: "end-chapter", counter-reset: "chapter")
 #show: exo-auto-chapter
@@ -207,7 +212,7 @@ Instead of calling `#exo-chapter-end()` manually, wrap your document with `exo-a
 `sol-loc` controls where *solutions* go, independently of corrections (default `auto` = follow `corr-loc`). A typical setup: the short answer right below the statement, the full correction at the end of the chapter.
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup, exo-auto-chapter
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup, exo-auto-chapter
 
 #exo-setup(
   corr-display: "correction",  // show both the correction and the solution
@@ -256,7 +261,7 @@ Corrections are detailed solutions for teachers, including pedagogical notes and
 ### Exercise with Correction
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 
 #exo-setup(corr-display: "correction")
 
@@ -276,7 +281,7 @@ Corrections are detailed solutions for teachers, including pedagogical notes and
 Create teacher answer keys showing only corrections:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 
 #exo-setup(
   display: "sol",              // Only show solutions/corrections
@@ -294,7 +299,7 @@ Create teacher answer keys showing only corrections:
 Use `corr-display: "mixed"` to default to solutions while showing corrections for specific exercises:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 
 #exo-setup(corr-display: "mixed")
 
@@ -318,6 +323,23 @@ Use `corr-display: "mixed"` to default to solutions while showing corrections fo
 
 - `show-corr: true` - In "mixed" mode, show correction instead of solution for this exercise
 - `sol-in-corr: true` - Indicates that the correction already includes the solution; in "correction" mode, only correction is shown (not both correction AND solution)
+- `worked: true` - Worked example: the solution/correction is always shown right after the statement (see below)
+
+### Worked Examples
+
+A worked example keeps its solution under the statement whatever the document-wide settings say: with `display: "ex"` (student version), with a deferred `corr-loc` (`"end-section"`, `"end-chapter"`, `"pagebreak"`), and with `corr-display: "solution"` when the exercise only has a correction.
+
+```typst
+#exo-setup(display: "ex")
+
+#exo(
+  title: [Worked example],
+  worked: true,
+  exercise: [Simplify $e^3 times e^4$.],
+  solution: [$e^3 times e^4 = e^(3+4) = e^7$],
+)
+#exo(exercise: [Simplify $e^5 times e^(-2)$.], solution: [$e^3$])  // hidden
+```
 
 ### Draft Mode and Placeholders
 
@@ -327,7 +349,7 @@ When creating exercise documents, you may have incomplete corrections or solutio
 - Hide placeholders in student versions
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 
 // Teacher draft version - shows placeholders
 #exo-setup(
@@ -357,7 +379,7 @@ When creating exercise documents, you may have incomplete corrections or solutio
 Tag exercises with metadata for organization and filtering:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo
+#import "@preview/exercise-bank:0.6.5": exo
 
 #exo(
   exercise: [Solve $x + 1 = 5$.],
@@ -372,7 +394,7 @@ Tag exercises with metadata for organization and filtering:
 Display only exercises matching certain criteria:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-filter
+#import "@preview/exercise-bank:0.6.5": exo, exo-filter
 
 // First, define exercises (they display normally)
 #exo(exercise: [Exercise 1], topic: "algebra")
@@ -390,7 +412,7 @@ Define exercises once, use them anywhere. Perfect for creating exercise collecti
 ### Defining Bank Exercises
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-define
+#import "@preview/exercise-bank:0.6.5": exo-define
 
 // These don't display - just registered
 #exo-define(
@@ -413,7 +435,7 @@ Define exercises once, use them anywhere. Perfect for creating exercise collecti
 ### Displaying Bank Exercises
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-show, exo-show-many
+#import "@preview/exercise-bank:0.6.5": exo-show, exo-show-many
 
 // Show a single exercise by ID
 #exo-show("quad-1")
@@ -427,7 +449,7 @@ Define exercises once, use them anywhere. Perfect for creating exercise collecti
 Use powerful filtering to select exercises:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-select
+#import "@preview/exercise-bank:0.6.5": exo-select
 
 // All quadratics exercises
 #exo-select(topic: "quadratics")
@@ -450,7 +472,7 @@ Use powerful filtering to select exercises:
 Tag exercises with competencies and display them visually:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-define, exo-show, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo-define, exo-show, exo-setup
 
 #exo-setup(show-competencies: true)
 
@@ -467,7 +489,7 @@ Tag exercises with competencies and display them visually:
 ### Filter by Competency
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-select
+#import "@preview/exercise-bank:0.6.5": exo-select
 
 // Exercises with specific competency
 #exo-select(competency: "C1.1")
@@ -481,7 +503,7 @@ Tag exercises with competencies and display them visually:
 ### Global Setup
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-setup
+#import "@preview/exercise-bank:0.6.5": exo-setup
 
 #exo-setup(
   // Display control
@@ -519,7 +541,7 @@ Tag exercises with competencies and display them visually:
 Change labels for different languages:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-setup
+#import "@preview/exercise-bank:0.6.5": exo-setup
 
 // French
 #exo-setup(
@@ -540,7 +562,7 @@ Change labels for different languages:
 Choose from 12 different badge styles:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 
 // Circled number style
 #exo-setup(badge-style: "circled")
@@ -621,12 +643,37 @@ The label text keeps the size set by `label-font-size`: scaling the badge change
 
 The label column follows the badge as it is resized, so `badge-position: "margin"` keeps its alignment without touching `margin-position`. Custom badge functions draw their own geometry and are left alone by all four settings.
 
+### Exercise Titles
+
+```typst
+#exo(
+  title: [Calculer une longueur avec le théorème de Pythagore],
+  exercise: [...],
+)
+```
+
+The full-width styles (`border-accent`, `underline`, `rounded-box`, `header-card`) put the title in their header line after `title-separator` (default an en dash): "Exercice 1 – Calculer une longueur…". The badge styles show it in bold next to the badge, and `margin` opens the statement with it. `title-format` takes a function `(title) => content` to restyle it, and `title-in-solutions: true` repeats it on the solution and correction boxes. `exo-define` accepts `title` too.
+
+### Header Spacing
+
+The header of the full-width styles and of `badge-position: "above"` can be tightened (or loosened):
+
+```typst
+#exo-setup(
+  badge-style: "underline",
+  header-rule-gap: 0.25em,  // "Exercice 1" -> rule (underline only)
+  header-body-gap: 0.5em,   // header -> statement
+)
+```
+
+Both default to `auto`, the style's own spacing.
+
 ### Counter Reset Options
 
 Control when exercise numbering resets:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-setup, exo-section-start, exo-chapter-start
+#import "@preview/exercise-bank:0.6.5": exo-setup, exo-section-start, exo-chapter-start
 
 // Reset at each section
 #exo-setup(counter-reset: "section")
@@ -658,9 +705,35 @@ With `number-prefix: "heading"`, the displayed exercise number is prefixed by th
 
 The separator is configurable with `number-separator` (default `"."`).
 
+For per-chapter or per-section numbering, the simplest is `number-prefix: "chapter"` or `"section"` together with `exo-auto-chapter`. Nothing else to call:
+
+```typst
+#show: exo-auto-chapter
+#exo-setup(number-prefix: "section", corr-loc: "end-section")
+
+= Equations        // chapter 1
+== Linear          // exercises 1.1.1, 1.1.2, ... - solutions printed before the next section
+== Quadratic       // exercises 1.2.1, ...
+```
+
+- `"chapter"` gives "3.5", `"section"` gives "3.2.5" (just "3.5" before the first section of a chapter).
+- `exo-auto-chapter` restarts the numbering at each chapter, and at each section when the prefix is `"section"` (force with `exo-auto-chapter.with(sections: true)`). Before every chapter or section heading it prints the pending `"end-section"` corrections, and before every chapter the `"end-chapter"` ones.
+- **beautitled**: both keywords read beautitled's own chapter and section counters, and `exo-auto-chapter` follows `enable-parts` (with parts, `==` is the chapter and `===` the section). No `chapter-counter` import is needed.
+
+`number-prefix-depth: 2` with `number-prefix: "heading"` takes two levels of `counter(heading)` directly: exercise 5 of section 3.2 shows as "3.2.5" (without `exo-auto-chapter`, reset the counter at each section with `exo-section-start()` or `exo-reset-counter()`).
+
+`number-prefix` also accepts a **literal value**, for a series or worksheet number. Setting one restarts the numbering:
+
+```typst
+#exo-setup(number-prefix: 3)   // Série 3
+#exo(exercise: [...])          // 3.1
+#exo(exercise: [...])          // 3.2
+#exo-setup(number-prefix: 4)   // 4.1, 4.2, ...
+```
+
 `number-prefix` also accepts a **counter** or a **function** `() => value`, for heading packages that keep their own chapter counter instead of `counter(heading)`.
 
-Works with [beautitled](https://typst.app/universe/package/beautitled): from beautitled 0.3.0 the native heading counter is kept in sync, so `number-prefix: "heading"` works out of the box (with earlier versions, use `number-prefix: chapter-counter` with beautitled's exported counter; same with `enable-parts: true`, where the first heading level is the part). With beautitled's *direct function calls* (`#chapter(...)` instead of `= headings`), `exo-auto-chapter` has no heading to hook onto - wrap the chapter call instead:
+Works with [beautitled](https://typst.app/universe/package/beautitled): `number-prefix: "chapter"` / `"section"` read its counters directly, parts included. From beautitled 0.3.0 the native heading counter is also kept in sync, so `number-prefix: "heading"` works too (without parts: with `enable-parts: true` the first heading level is the part, so prefer `"chapter"`). With beautitled's *direct function calls* (`#chapter(...)` instead of `= headings`), `exo-auto-chapter` has no heading to hook onto - wrap the chapter call instead:
 
 ```typst
 #let chapitre(..args) = { exo-chapter-end(); chapter(..args); exo-chapter-start() }
@@ -671,7 +744,7 @@ Works with [beautitled](https://typst.app/universe/package/beautitled): from bea
 Display exercise IDs for reference:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-setup, exo
+#import "@preview/exercise-bank:0.6.5": exo-setup, exo
 
 #exo-setup(show-id: true)
 
@@ -688,7 +761,7 @@ Display exercise IDs for reference:
 Mark exercises as advanced to display a visual cue before the label:
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo, exo-setup
+#import "@preview/exercise-bank:0.6.5": exo, exo-setup
 
 // Default symbol is "*"
 #exo(
@@ -903,7 +976,7 @@ For a document that is *entirely* two-column, use `exo-page-columns` and leave `
 ### Reset Counter
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-reset-counter
+#import "@preview/exercise-bank:0.6.5": exo-reset-counter
 
 #exo-reset-counter()  // Reset exercise numbering to 0
 ```
@@ -911,7 +984,7 @@ For a document that is *entirely* two-column, use `exo-page-columns` and leave `
 ### Clear Registry
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-clear-registry
+#import "@preview/exercise-bank:0.6.5": exo-clear-registry
 
 #exo-clear-registry()  // Clear all registered exercises
 ```
@@ -919,7 +992,7 @@ For a document that is *entirely* two-column, use `exo-page-columns` and leave `
 ### Count Exercises
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": exo-count
+#import "@preview/exercise-bank:0.6.5": exo-count
 
 Total algebra exercises: #exo-count(topic: "algebra")
 Level 1M exercises: #exo-count(level: "1M")
@@ -935,6 +1008,8 @@ Level 1M exercises: #exo-count(level: "1M")
 | `solution` | content | none | Solution content |
 | `correction` | content | none | Correction content (teacher version) |
 | `id` | string/auto | auto | Unique exercise ID |
+| `title` | content | none | Title shown after "Exercise 1" |
+| `worked` | bool | false | Worked example: always show the solution/correction right after the statement |
 | `sol-in-corr` | bool | false | If true, solution is in correction (show only correction, not both) |
 | `show-corr` | bool | false | If true, show correction in "mixed" mode |
 | `optional` | bool | false | Show optional marker before the label |
@@ -953,6 +1028,8 @@ Level 1M exercises: #exo-count(level: "1M")
 | `solution` | content | none | Solution content |
 | `correction` | content | none | Correction content (teacher version) |
 | `id` | string/auto | auto | Unique exercise ID |
+| `title` | content | none | Title shown after "Exercise 1" |
+| `worked` | bool | false | Worked example: always show the solution/correction right after the statement |
 | `competencies` | array | () | List of competency tags |
 | `sol-in-corr` | bool | false | If true, solution is in correction (show only correction) |
 | `show-corr` | bool | false | If true, show correction in "mixed" mode |
@@ -994,8 +1071,14 @@ Level 1M exercises: #exo-count(level: "1M")
 | `correction-label` | string | "Correction" | Label for corrections |
 | `exercise-label` | string | "Exercise" | Label for exercises |
 | `counter-reset` | string | "section" | "section", "chapter", "global" |
-| `number-prefix` | none/string/counter/function | none | "heading" (level-1 heading number), a custom counter, or a function () => value |
+| `number-prefix` | none/string/int/content/counter/function | none | "chapter" / "section" (chapter or chapter.section number, beautitled-aware), "heading" (heading number), a literal series number (restarts the numbering), a custom counter, or a function () => value |
+| `number-prefix-depth` | int | 1 | Heading levels in a "heading" prefix (2 = "3.2.5") |
 | `number-separator` | string | "." | Separator for chapter-prefixed numbers |
+| `title-separator` | content | `[ -- ]` | Between "Exercise 1" and the title |
+| `title-format` | auto/function | auto | Restyle titles: (title) => content |
+| `title-in-solutions` | bool | false | Repeat the title on solution/correction boxes |
+| `header-rule-gap` | length/auto | auto | underline style: space between the label and its rule |
+| `header-body-gap` | length/auto | auto | Space between the header and the statement (full-width styles, `badge-position: "above"`) |
 | `show-metadata` | bool | false | Display metadata |
 | `show-id` | bool | false | Display exercise ID |
 | `show-competencies` | bool | false | Display competency tags |
@@ -1049,7 +1132,7 @@ This predates 0.6.4 (it reproduces on 0.6.3). Either use `link-style: "icon"`, o
 ## Complete Example
 
 ```typst
-#import "@preview/exercise-bank:0.6.4": *
+#import "@preview/exercise-bank:0.6.5": *
 
 // Setup
 #exo-setup(
@@ -1100,6 +1183,19 @@ This predates 0.6.4 (it reproduces on 0.6.3). Either use `link-style: "icon"`, o
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### [0.6.5] - 2026-09-15
+
+#### Added
+- **Exercise titles.** `exo(title: ..)` (and `exo-define`) shows "Exercise 1 – Title": in the header line of the full-width styles, in bold next to the badge for the badge styles. `title-separator`, `title-format` and `title-in-solutions` configure it.
+- **Worked examples.** `exo(worked: true)` always shows the solution/correction right after the statement, including with `display: "ex"` and a deferred `corr-loc`. Honoured by `exo-show`, `exo-select` and `exo-filter` for bank exercises.
+- **Header spacing.** `header-rule-gap` (underline style) and `header-body-gap` (full-width styles and `badge-position: "above"`) set the space between the label, its rule and the statement. `auto` keeps the current look.
+- **Series and section prefixes.** `number-prefix` accepts a literal value (`number-prefix: 3` → 3.1, 3.2, …), which restarts the numbering; `number-prefix-depth` builds a "heading" prefix from several heading levels (3.2.5).
+- **`number-prefix: "chapter"` / `"section"`.** Chapter (3.5) or chapter.section (3.2.5) numbering that reads beautitled's own counters when present, so it stays right with `enable-parts`.
+- **`exo-auto-chapter` handles sections.** It restarts the numbering at each section (automatically with `number-prefix: "section"`, or `sections: true`), and prints pending `"end-section"` corrections before each section and chapter heading. With beautitled `enable-parts`, chapters and sections are detected one heading level deeper.
+
+#### Fixed
+- **`exo-auto-chapter` silently dropped pending `"end-section"` corrections at a chapter boundary.** They are now printed before the chapter heading.
 
 ### [0.6.4] - 2026-09-01
 

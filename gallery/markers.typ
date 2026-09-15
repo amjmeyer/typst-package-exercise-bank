@@ -1,4 +1,4 @@
-#import "@preview/exercise-bank:0.6.4": *
+#import "@preview/exercise-bank:0.6.5": *
 
 #set page(width: 14cm, height: auto, margin: 1cm)
 #set text(font: "New Computer Modern", size: 11pt)
