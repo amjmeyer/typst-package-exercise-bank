@@ -2,7 +2,7 @@
 // literal / multi-level number prefixes
 //   typst compile --root .. features-0.7.typ features-0.7-{p}.png --format png
 
-#import "../lib.typ": *
+#import "../src/lib.typ": *
 
 #set page(width: 16cm, height: 22cm, margin: (left: 2.5cm, rest: 1.2cm))
 #set text(size: 10pt, lang: "fr")

@@ -1,7 +1,7 @@
 // Test: two-column layouts + badge sizing (0.6.4)
 //   typst compile --root .. tests/columns-corrections.typ out-{p}.png --format png
 
-#import "../lib.typ": *
+#import "../src/lib.typ": *
 
 #set page(width: 16cm, height: 22cm, margin: 1.4cm)
 #set text(size: 10pt)

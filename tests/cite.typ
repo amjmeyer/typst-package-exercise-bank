@@ -12,7 +12,7 @@
 // exercise the no-beautitled path on its own.
 //
 // Run: typst compile --root .. tests/cite.typ out.pdf && pdftotext out.pdf -
-#import "../lib.typ": *
+#import "../src/lib.typ": *
 
 #set page(width: 14cm, height: auto, margin: 1.5cm)
 #set heading(numbering: "1.")

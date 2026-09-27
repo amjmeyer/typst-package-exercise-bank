@@ -1,7 +1,7 @@
 // beautitled interop: parts, "section"/"chapter" prefixes and automatic
 // per-section corrections with exo-auto-chapter (needs @local/beautitled:0.3.0)
 #import "@local/beautitled:0.3.0": *
-#import "../lib.typ": *
+#import "../src/lib.typ": *
 #set page(width: 14cm, height: auto, margin: 1.5cm)
 #show: beautitled-init
 #beautitled-setup(enable-parts: true)

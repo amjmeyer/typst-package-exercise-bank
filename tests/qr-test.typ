@@ -1,5 +1,5 @@
 // Visual test: QR codes in every badge style
-#import "../lib.typ": *
+#import "../src/lib.typ": *
 
 #set page(margin: (left: 3cm, rest: 1.5cm), height: auto)
 #set text(font: "New Computer Modern", size: 11pt)

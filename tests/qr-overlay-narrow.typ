@@ -2,7 +2,7 @@
 // text an exercise puts before its #tasks call has to keep clear of it. In a
 // narrow column that sentence takes two or three lines and used to run right
 // under the code.
-#import "/lib.typ": exo, exo-setup
+#import "/src/lib.typ": exo, exo-setup
 #import "@preview/taskize:0.2.9": tasks, tasks-setup
 
 #set page(width: 19cm, height: 8cm, margin: 1cm)

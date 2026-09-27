@@ -4,7 +4,7 @@
 // corrections printed by exo-auto-chapter must stay inside the columns.
 //   typst compile --root .. tests/two-column-styles.typ out-{p}.png --format png
 
-#import "../lib.typ": *
+#import "../src/lib.typ": *
 
 #set page(paper: "a4", margin: 2cm, numbering: "1")
 #set text(size: 9.5pt)

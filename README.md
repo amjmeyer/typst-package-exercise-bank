@@ -39,20 +39,21 @@ stops being a link.
 
 ## Where to look
 
-- [`new_features/exo-cite.typ`](new_features/exo-cite.typ) — the
+- [`src/new_features/exo-cite.typ`](src/new_features/exo-cite.typ) — the
   implementation, with the full parameter reference and rationale in its own
   comments and `///` doc comments.
-- [`lib.typ`](lib.typ) — one import line added, in the "Utility Functions"
-  section, right after `exo-count`.
+- [`src/lib.typ`](src/lib.typ) — one import line added, in the "Utility
+  Functions" section, right after `exo-count`.
 - [`tests/cite.typ`](tests/cite.typ) + [`tests/check-cite.sh`](tests/check-cite.sh) —
   regression fixture (forward and backward citation across chapters,
   not-found fallback, page/prefix toggles), same convention as this
   package's other `tests/check-*.sh` scripts. Run with
   `bash tests/check-cite.sh`.
-- [`new_features/example-of-use/`](new_features/example-of-use/) — a real,
-  multi-chapter `beautitled` + `exercise-bank` document using `exo-cite`
-  (not part of the published package — see its own README for context on
-  why it was built). Compile with `typst compile new_features/example-of-use/main.typ`.
+- [`src/new_features/example-of-use/`](src/new_features/example-of-use/) —
+  a real, multi-chapter `beautitled` + `exercise-bank` document using
+  `exo-cite` (not part of the published package — see its own README for
+  context on why it was built). Compile with
+  `typst compile src/new_features/example-of-use/main.typ`.
 
 ## Suggested changelog entry
 

@@ -3,7 +3,7 @@
 A small worked example combining [`beautitled`](https://typst.app/universe/package/beautitled)
 and [`exercise-bank`](https://typst.app/universe/package/exercise-bank) for a
 French course document. It's what motivated `exo-cite` — see
-[the fork's own README](../../README.md) and
+[the fork's own README](../../../README.md) and
 [`new_features/exo-cite.typ`](../exo-cite.typ) — and now demonstrates the
 real thing: `exo-cite` is imported from this fork's own `lib.typ` (see
 `main.typ`), not hand-rolled locally.

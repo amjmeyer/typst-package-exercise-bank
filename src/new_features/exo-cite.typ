@@ -3,9 +3,9 @@
 // ============================================================================
 // New in this fork: `exo-cite`, below. Candidate to propose upstream.
 //
-// This lives at the package root (next to lib.typ), not under src/: this
-// package has no src/ directory upstream, so new_features/ follows its own
-// existing flat layout rather than introducing one just for this addition.
+// Lives at src/new_features/, next to src/lib.typ: this fork moved the
+// package's own entrypoint under src/ (upstream keeps a flat lib.typ at the
+// package root instead), and new_features/ moved along with it.
 //
 // ============================================================================
 // Citing a bank exercise from anywhere in the document
