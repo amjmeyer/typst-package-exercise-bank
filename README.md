@@ -1,6 +1,6 @@
 # exercise-bank
 
-[![exercise-bank on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.6.5-239dad?labelColor=eee)](https://typst.app/universe/package/exercise-bank)
+[![exercise-bank on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.7.0-239dad?labelColor=eee)](https://typst.app/universe/package/exercise-bank)
 [![Full package manual as PDF](https://img.shields.io/badge/Manual-pdf-333333?labelColor=eee)](https://github.com/nathan-ed/typst-package-exercise-bank/blob/b011bfe6f048c31c5d644410a6b2c3da17afd50d/docs/manual.pdf)
 [![Distributed under the MIT license](https://img.shields.io/badge/License-MIT-333333?labelColor=eee)](LICENSE)
 
@@ -998,6 +998,34 @@ Total algebra exercises: #exo-count(topic: "algebra")
 Level 1M exercises: #exo-count(level: "1M")
 ```
 
+### Citing an Exercise From Anywhere
+
+`exo-select` numbers exercises as it displays them, but that number isn't
+tied to a counter you can query from elsewhere. `exo-cite` gets you a
+clickable "Exercise 1.2 (p. 3)" pointing back to one, from any chapter —
+before or after the one that actually displays it:
+
+```typst
+#import "@preview/exercise-bank:0.7.0": exo-cite
+
+#exo-setup(exercise-label: "Exercise", number-prefix: "chapter")
+
+= Chapter 1
+#exo-select(topic: "algebra") <algebra-ch1>
+
+= Chapter 2
+See #exo-cite("eq-linear-1", <algebra-ch1>, topic: "algebra") for a similar
+problem.
+```
+
+The label goes next to the `exo-select` call that displays the exercise —
+`exo-cite` reads the chapter number and page there, and links to it. `topic`
+must match whatever the target `exo-select` filtered on, since the displayed
+number is the exercise's position within that filtered list. An unknown id
+falls back to "??" instead of a wrong-looking number, and stops being a link.
+See `new_features/exo-cite.typ` for the full parameter reference, including
+`show-page`, `prefix` and `page-prefix`.
+
 ## Parameters Reference
 
 ### `exo` Function
@@ -1183,6 +1211,11 @@ This predates 0.6.4 (it reproduces on 0.6.3). Either use `link-style: "icon"`, o
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### [0.7.0] - 2026-09-27
+
+#### Added
+- **`exo-cite`** — cite a bank exercise from anywhere in the document ("Exercise 1.2 (p. 3)", clickable), by chapter number and position within a topic. See [Citing an Exercise From Anywhere](#citing-an-exercise-from-anywhere)
 
 ### [0.6.5] - 2026-09-15
 
